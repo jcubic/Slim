@@ -31,14 +31,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-if ( !defined('MCRYPT_RIJNDAEL_256') ) {
-    define('MCRYPT_RIJNDAEL_256', 0);
-}
-if ( !defined('MCRYPT_MODE_CBC') ) {
-    define('MCRYPT_MODE_CBC', 0);
-}
-
-require('exceptions.php');
 
 // Comment out this line if you are using an alternative autoloader (e.g. Composer)
 Slim::registerAutoloader();
@@ -539,7 +531,7 @@ class Slim {
                 $result = (string)call_user_func_array($customErrorHandler, array($argument));
             } else {
                 if ($this->config('debug') && $argument instanceof Exception) {
-                    $result = prettyException($argument);
+                    $result = $this->prettyException($argument);
                 } else {
                     $result = (string)call_user_func_array(array($this, 'defaultError'),
                                                            array($argument));
@@ -548,7 +540,7 @@ class Slim {
         } catch (Exception $e) {
             //catch exceptions from user defined code
             if ($this->config('debug')) {
-                $result = prettyException($e);
+                $result = $this->prettyException($e);
             } else {
                 $result = (string)call_user_func_array(array($this, 'defaultError'),
                                                        array($argument));
@@ -1245,6 +1237,41 @@ class Slim {
             throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
         }
         return true;
+    }
+
+    /**
+     * Return html contaning nice looking Exception along with stack trace
+     *
+     * @param Exception
+     * return html
+     */
+    public function prettyException( $exception ) {
+        $title = 'Slim Application Error';
+        $code = $exception->getCode();
+        $message = $exception->getMessage();
+        $file = $exception->getFile();
+        $line = $exception->getLine();
+        $trace = $exception->getTraceAsString();
+        $html = '<p>The application could not run because of the following error:</p>';
+        $html .= '<h2>Details</h2>';
+        $html .= sprintf('<div><strong>Type:</strong> %s</div>', get_class($exception));
+        if ( $code ) {
+            $html .= sprintf('<div><strong>Code:</strong> %s</div>', $code);
+        }
+        if ( $message ) {
+            $html .= sprintf('<div><strong>Message:</strong> %s</div>', $message);
+        }
+        if ( $file ) {
+            $html .= sprintf('<div><strong>File:</strong> %s</div>', $file);
+        }
+        if ( $line ) {
+            $html .= sprintf('<div><strong>Line:</strong> %s</div>', $line);
+        }
+        if ( $trace ) {
+            $html .= '<h2>Trace</h2>';
+            $html .= sprintf('<pre>%s</pre>', $trace);
+        }
+        return self::generateTemplateMarkup('Slim Application Error', $html);
     }
 
     /**
